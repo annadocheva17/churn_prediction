@@ -1,17 +1,5 @@
 import pandas as pd
 import numpy as np
-from sympy import re
-
-def clean_column_names(df):
-    """Clean column names to be XGBoost compatible."""
-    df = df.copy()
-    df.columns = df.columns.str.replace('[', '_', regex=False)
-    df.columns = df.columns.str.replace(']', '_', regex=False)
-    df.columns = df.columns.str.replace('<', 'lt', regex=False)
-    df.columns = df.columns.str.replace('>', 'gt', regex=False)
-    df.columns = df.columns.str.replace(' ', '_', regex=False)
-    df.columns = [re.sub(r'[^a-zA-Z0-9_]', '_', col) for col in df.columns]
-    return df
 
 def extract_features(df, window_start, window_end, include_activity_flag=True):
     window_df = df[(df['time'] >= window_start) & (df['time'] < window_end)].copy()

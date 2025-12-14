@@ -140,11 +140,11 @@ def main():
     test_proba = final_model.predict_proba(X_test_sel)[:, 1]
     predictions = (test_proba >= best_threshold).astype(int)
 
-    # Stategy for inactive users
-    rng = np.random.RandomState(RANDOM_STATE)
-    inactive_idx = np.where(is_inactive_test.values)[0]
-    if len(inactive_idx) > 0:
-        predictions[inactive_idx] = (rng.rand(len(inactive_idx)) < inactive_churn_rate).astype(int)
+    # Stategy for inactive users, always predict the majority class observed in training
+
+    inactive_majority = int(inactive_churn_rate >= 0.5)
+    predictions[is_inactive_test] = inactive_majority
+    
     print()
     print(f"Prediction Summary:")
     print(f"Total predicted churns: {int(predictions.sum())} ({predictions.mean():.2%})")

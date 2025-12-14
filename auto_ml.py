@@ -98,7 +98,7 @@ def main():
     print("Training...")
     aml.train(y="target", training_frame=train_h2o)
 
-    # Results & prediction
+    # Results
     print()
     print("Leaderboard:")
     print(aml.leaderboard.head().as_data_frame().to_string(index=False))

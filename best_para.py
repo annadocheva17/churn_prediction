@@ -138,8 +138,7 @@ def run_meta_search(df, args):
                 "obs_window_days": obs_days,
                 "top_k_features": k,
                 "window_stride_days": stride,
-                "mean_auc": mean_auc,
-                "n_samples": len(X_proc)
+                "mean_auc": mean_auc
             })
 
         # Updating the progress
@@ -154,7 +153,7 @@ def run_meta_search(df, args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", default="data/train.parquet")
-    parser.add_argument("--results", default="meta_search_results.csv")
+    parser.add_argument("--results", default="para_search_results.csv")
     
     # Grid configuration [min, max, step]
     parser.add_argument("--obs", nargs='+', type=int, default=[14, 45, 7])

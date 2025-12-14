@@ -8,9 +8,9 @@ OUTPUT_PATH = "churn_predictions.csv"
 # Time configuration
 PREDICTION_START_DATE = datetime(2018, 11, 20)
 
-OBSERVATION_WINDOW_DAYS = 25
+OBSERVATION_WINDOW_DAYS = 21  # (obs_window_days)
 PREDICTION_WINDOW_DAYS = 10
-WINDOW_STEP_DAYS = 7
+WINDOW_STEP_DAYS = 7  # (window_stride_days)
 
 OBSERVATION_END_DATE = PREDICTION_START_DATE
 OBSERVATION_START_DATE = OBSERVATION_END_DATE - timedelta(days=OBSERVATION_WINDOW_DAYS)
@@ -20,7 +20,7 @@ RANDOM_STATE = 42
 TEST_SIZE = 0.2
 
 # Feature selection
-TOP_K_FEATURES = 25
+TOP_K_FEATURES = 30  # (top_k_features)
 KEEP_SPECIAL_FEATURES = ["has_activity"]
 
 # Optuna configuration

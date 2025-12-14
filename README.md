@@ -58,5 +58,6 @@ We observed that machine learning models often hallucinate patterns on inactive 
 
 ## Key Results
 
-  * **Validation AUC:** 
-  * **Recall at Threshold:** 
+  * **Validation AUC:** 0.7191
+  * **Threshold** 0.459
+  * **Recall at Threshold:** 0.5501

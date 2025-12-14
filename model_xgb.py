@@ -2,7 +2,7 @@ import numpy as np
 import optuna
 from optuna.samplers import TPESampler
 from xgboost import XGBClassifier
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import GroupKFold
 from sklearn.metrics import roc_auc_score, recall_score
 
 from config import (
@@ -17,7 +17,7 @@ from config import (
 )
 
 
-def objective(trial, X_train, y_train, n_folds: int = OPTUNA_N_FOLDS):
+def objective(trial, X_train, y_train, groups, n_folds: int = OPTUNA_N_FOLDS):
     params = {
         **XGB_BASE_PARAMS,
         "n_estimators": trial.suggest_int("n_estimators", 150, 400, step=50),
@@ -33,12 +33,14 @@ def objective(trial, X_train, y_train, n_folds: int = OPTUNA_N_FOLDS):
         "random_state": RANDOM_STATE,  
     }
 
-    skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=RANDOM_STATE)
+    # CHANGE: Use GroupKFold instead of StratifiedKFold to ensure there is no data leakage
+    gkf = GroupKFold(n_splits=n_folds)
 
     aucs = []
     recalls_at_05 = []
 
-    for fold_idx, (tr_idx, va_idx) in enumerate(skf.split(X_train, y_train)):
+    
+    for fold_idx, (tr_idx, va_idx) in enumerate(gkf.split(X_train, y_train, groups=groups)):
         X_tr, X_va = X_train.iloc[tr_idx], X_train.iloc[va_idx]
         y_tr, y_va = y_train.iloc[tr_idx], y_train.iloc[va_idx]
 
@@ -61,7 +63,7 @@ def objective(trial, X_train, y_train, n_folds: int = OPTUNA_N_FOLDS):
     return float(np.mean(aucs))
 
 
-def optimize_hyperparameters(X_train, y_train):
+def optimize_hyperparameters(X_train, y_train, groups): 
     if (not USE_OPTUNA) or (optuna is None):
         params = {**XGB_BASE_PARAMS, **XGB_MANUAL_PARAMS, "random_state": RANDOM_STATE}
         return params
@@ -74,7 +76,7 @@ def optimize_hyperparameters(X_train, y_train):
     )
 
     study.optimize(
-        lambda trial: objective(trial, X_train, y_train),
+        lambda trial: objective(trial, X_train, y_train, groups),
         n_trials=OPTUNA_N_TRIALS,
         timeout=OPTUNA_TIMEOUT,
         n_jobs=1,

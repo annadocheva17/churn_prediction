@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from xgboost import XGBClassifier
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GroupShuffleSplit
 from sklearn.metrics import roc_auc_score
 
 from config import (
@@ -49,7 +49,7 @@ def main():
     )
     print(f"Created {len(windows)} training windows")
 
-    # Build training matrix
+    # Build training dataset
     print()
     print("Building training dataset...")
     X_train_raw, y_train = build_training_dataset(
@@ -59,6 +59,13 @@ def main():
         label_fn=extract_window_labels,
         cohort="pred_active",
     )
+    
+    # CHANGE: Extract groups (userIds) before preprocessing removes them
+    if 'userId' in X_train_raw.columns:
+        train_groups = X_train_raw['userId']
+    else:
+        train_groups = X_train_raw.index.to_series()
+        
     print(f"Samples: {len(X_train_raw):,}, churn rate: {y_train.mean():.2%}, raw feats: {X_train_raw.shape[1]}")
 
     # Inactive analysis
@@ -79,16 +86,20 @@ def main():
     print(f"Final feature count: {X_train_sel.shape[1]}")
 
     # Hyperparams, validation & threshold
-    best_params = optimize_hyperparameters(X_train_sel, y_train)
+    # CHANGE: Pass groups to optimizer
+    best_params = optimize_hyperparameters(X_train_sel, y_train, groups=train_groups)
+    
     print()
-    print("Training model with selected features...")
-    X_tr, X_val, y_tr, y_val = train_test_split(
-        X_train_sel,
-        y_train,
-        test_size=TEST_SIZE,
-        stratify=y_train,
-        random_state=RANDOM_STATE,
-    )
+    print("Training model with selected features (Grouped Split)...")
+    
+    # CHANGE: Use GroupShuffleSplit instead of train_test_split
+    gss = GroupShuffleSplit(n_splits=1, test_size=TEST_SIZE, random_state=RANDOM_STATE)
+    train_idx, val_idx = next(gss.split(X_train_sel, y_train, groups=train_groups))
+    
+    X_tr = X_train_sel.iloc[train_idx]
+    y_tr = y_train.iloc[train_idx]
+    X_val = X_train_sel.iloc[val_idx]
+    y_val = y_train.iloc[val_idx]
 
     tmp_model = XGBClassifier(**best_params)
     tmp_model.fit(X_tr, y_tr)

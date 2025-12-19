@@ -5,7 +5,7 @@ import warnings
 import pandas as pd
 import numpy as np
 from xgboost import XGBClassifier
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import GroupKFold
 from sklearn.metrics import roc_auc_score
 
 # Import of previous fonctions 
@@ -81,17 +81,27 @@ def run_meta_search(df, args):
                 label_fn=extract_window_labels,
                 cohort="pred_active",
             )
+            if "userId" in X_raw.columns:
+                groups = X_raw["userId"]
+                X_raw = X_raw.drop(columns=["userId"])
+            else:
+                groups = X_raw.index.to_series()
             
             # Preprocessing
+            groups.index = X_raw.index
             X_proc = preprocess_train(X_raw)
+
+            y_full = y_full.loc[X_proc.index]
+            groups = groups.loc[X_proc.index]
             
         except (RuntimeError, ValueError) as e:  # if nothing found
             print(f"Group [{i}/{len(grouped_combos)}] Skipped: {e}")
             continue
 
         # Cross-Validation & Feature Selection
-        skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
-        splits = list(skf.split(X_proc, y_full))
+        gkf = GroupKFold(n_splits=3)
+        splits = list(gkf.split(X_proc, y_full, groups=groups))
+
         
         xgb_params = {
             "n_estimators": 150,
@@ -157,7 +167,7 @@ if __name__ == "__main__":
     
     # Grid configuration [min, max, step]
     parser.add_argument("--obs", nargs='+', type=int, default=[14, 45, 7])
-    parser.add_argument("--topk", nargs='+', type=int, default=[10, 50, 10])
+    parser.add_argument("--topk", nargs='+', type=int, default=[10, 40, 10])
     parser.add_argument("--stride", nargs='+', type=int, default=[7, 14, 7])
 
     args = parser.parse_args()
